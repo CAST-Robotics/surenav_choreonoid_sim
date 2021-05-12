@@ -76,8 +76,8 @@ vector<double> Robot::spinOffline(){
     MatrixXd rfoot(3,1);
     Matrix3d attitude = MatrixXd::Identity(3,3);
     MatrixXd pelvis(3,1);
-    lfoot << 0.05, 0.1, 0.1;
-    rfoot << 0.05, -0.1, 0.1;
+    lfoot << 0.1, 0.05, 0.25;
+    rfoot << -0.1, -0.05, 0.25;
     pelvis << 0.0, 0.0, 0.7135;
     doIK(pelvis,attitude,lfoot,attitude,rfoot,attitude);
 
@@ -136,12 +136,14 @@ double* Robot::geometricIK(MatrixXd p1, MatrixXd r1, MatrixXd p7, MatrixXd r7, b
     double* q = new double[6];  
     MatrixXd D(3,1);
     if (isLeft)
-        D << 0.0,-joints_[0].length_,0.0;
+        D << 0.0,0.0,0.0;
+        //D << 0.0,-joints_[0].length_,0.0;
     else
-        D << 0.0,joints_[0].length_,0.0;
+        D << 0.0,0.0,0.0;
+        //D << 0.0,joints_[0].length_,0.0;
     MatrixXd r = r7.transpose() * (p1 + r1 * D + r1 * e - p7);
     double C = r.norm();
-    double c3 = (pow(C,2) - pow(a,2) - pow(b,2)/(2 * a * b));
+    double c3 = (pow(C,2) - pow(a,2) - pow(b,2))/(2 * a * b);
     if (c3 >= 1){
         q[3] = 0.0;
         // Raise error
@@ -165,7 +167,7 @@ double* Robot::geometricIK(MatrixXd p1, MatrixXd r1, MatrixXd p7, MatrixXd r7, b
     if(r(2,0) < 0)
         sign_r2 = -1;
     q[4] = -atan2(r(0,0),sign_r2 * sqrt(pow(r(1,0),2) + pow(r(2,0),2))) - q4a;      // Ankle Pitch
-    Matrix3d R = r1.transpose() * r7 * (Rroll(-q[5]),RPitch(-q[3] - q[4]));
+    Matrix3d R = r1.transpose() * r7 * Rroll(-q[5]) * RPitch(-q[3] - q[4]);
     q[0] = atan2(-R(0,1),R(1,1));         // Hip Yaw
     q[1] = atan2(R(2,1), -R(0,1) * sin(q[0]) + R(1,1) * cos(q[0]));           // Hip Roll
     q[2] = atan2(-R(2,0), R(2,2));        // Hip Pitch
